@@ -52,7 +52,7 @@ namespace MmtCustomerOrders.Controllers
                         OrderNumber = orderGrouping.Key.ToString(), 
                         OrderDate = orderGrouping.First().OrderDate.ToString("dd-MMM-yyyy"),
                         DeliveryExpected = orderGrouping.First().DeliveryExpected.ToString("dd-MMM-yyyy"), 
-                        //DeliveryAddress = customer.DeliveryAddress
+                        DeliveryAddress = customer.Address(),
                         OrderItems = orderGrouping.Select(orderItem => new OrderItem 
                             { 
                                 Product = orderItem.ProductName,
