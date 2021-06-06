@@ -6,6 +6,9 @@ using CustomersApiClient.Exceptions;
 using OrdersData;
 using System.Collections.Generic;
 using System.Linq;
+using MmtCustomerOrders.Models;
+using System;
+using Microsoft.AspNetCore.Http;
 
 namespace MmtCustomerOrders.Controllers
 {
@@ -24,28 +27,41 @@ namespace MmtCustomerOrders.Controllers
             _customerOrderRepository = customerOrderRepository;
         }
 
-        [HttpGet]
-        public async Task<IActionResult> Get(string email)
+        [HttpPost]
+        public async Task<IActionResult> Post(CustomerOrdersRequest customerOrdersRequest)
         {
-            if (string.IsNullOrEmpty(email))
+            if (customerOrdersRequest == null)
             {
-                _logger.LogWarning("Get Customer called with no email");
+                _logger.LogWarning("Get Customer called with invalid request");
 
                 NotFound();
             }
 
             try
             {
-                _logger.LogInformation($"Getting customer data for email: {email}");
+                var email = customerOrdersRequest.User;
+                var customerId = customerOrdersRequest.CustomerID;
 
-                var customer = await _customersHttpClient.GetCustomerAsync(email);
-                var sqlCustomerOrdersData = await _customerOrderRepository.GetOrdersForCustomerAsync(customer.CustomerId);
+                // TODO Validation for email and customerID what if they are not matching???
+                
+                _logger.LogInformation($"Getting customer data for user: {email} with customerId: {customerId}");
+
+                // TODO GetCustomerAsync throws a NoCustomerException, but what does GetOrdersForCustomerAsync do???
+
+                var customerTask = _customersHttpClient.GetCustomerAsync(email);
+                var sqlCustomerOrdersDataTask = _customerOrderRepository.GetOrdersForCustomerAsync(customerId);
+
+                await Task.WhenAll(customerTask, sqlCustomerOrdersDataTask);
+
+                var customer = customerTask.Result;
+                var sqlCustomerOrdersData = sqlCustomerOrdersDataTask.Result;
 
                 // Todo Move to automapper/mapper class
                 var response = new CustomerOrdersResponse();
                 response.Customer.FirstName = customer.FirstName;
                 response.Customer.LastName = customer.LastName;
 
+                // Todo would really like some unit test around this :(
                 var customerOrders = sqlCustomerOrdersData.GroupBy(order => order.OrderNumber)
                     .Select(orderGrouping => new Order() 
                     { 
@@ -67,9 +83,15 @@ namespace MmtCustomerOrders.Controllers
             } 
             catch (NoCustomerException)
             {
-                _logger.LogWarning($"Request for a customer that does not exist: {email}");
+                _logger.LogWarning($"Getting customer data for user: {customerOrdersRequest.User} with customerId: {customerOrdersRequest.CustomerID}");
 
                 return NotFound(); 
+            } 
+            catch (Exception ex)
+            {
+                _logger.LogError("An unexpected error occured", ex);
+
+               return StatusCode(StatusCodes.Status500InternalServerError, ex);
             }
         }
     }
