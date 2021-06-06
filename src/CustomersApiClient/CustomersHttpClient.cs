@@ -25,6 +25,11 @@ namespace CustomersApiClient
 
         public async Task<Customer> GetCustomerAsync(string email)
         {
+            if (string.IsNullOrEmpty(email))
+            {
+                return default;
+            }
+
             var url = Url.Combine(_baseUrl, "GetUserDetails")
                 .SetQueryParams(new
                 {
@@ -36,9 +41,14 @@ namespace CustomersApiClient
             {
                 return await url.GetJsonAsync<Customer>();
             }
-            catch (FlurlHttpException)
+            catch (FlurlHttpException ex)
             {
-                throw new NoCustomerException(email);
+                if (ex.StatusCode == 404)
+                {
+                    throw new NoCustomerException(email);
+                }
+
+                throw new Exception(ex.Message);
             }
         }
     }

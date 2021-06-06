@@ -1,8 +1,10 @@
 ﻿namespace CustomersApiClient.Models
 {
-    public record Customer(
-        string CustomerId,
-        string FirstName,
-        string LastName
-    );
+    public class Customer
+    {
+        public string CustomerId { get; set; }
+        public string FirstName { get; set; }
+        public string LastName { get; set; }
+        public object Email { get; set; }
+    }
 }
