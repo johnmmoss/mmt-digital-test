@@ -11,6 +11,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\CustomersApiClient\CustomersApiClient.csproj" />
+    <ProjectReference Include="..\OrdersData\OrdersData.csproj" />
   </ItemGroup>
 
 </Project>
